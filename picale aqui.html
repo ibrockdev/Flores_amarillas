@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para mi Corazón 💛</title>
+    <style>
+        /* --- 1. Estilos Base --- */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            /* Degradado más dulce: Amarillo suave a rosa/melocotón */
+            background: linear-gradient(135deg, #fff7c0, #ffc8dd); 
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ocultar el reproductor de audio */
+        #musicPlayer {
+            position: absolute;
+            top: -50px; 
+            visibility: hidden; 
+        }
+
+        /* --- 2. Fuentes --- */
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Pacifico&display=swap');
+
+        /* --- 3. Contenedor Principal (Canvas y Mensaje) --- */
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        #flowerCanvas {
+            border: none;
+            display: block;
+            background-color: transparent;
+        }
+
+        /* --- 4. Mensaje de Amor --- */
+        .mensaje {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            font-family: 'Pacifico', cursive;
+            font-size: 0em;
+            color: #d84315; 
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+            opacity: 0;
+            transition: all 1.8s ease-out;
+            line-height: 1.2;
+            white-space: nowrap;
+            z-index: 11;
+        }
+
+        .mensaje.show {
+            font-size: 3em;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* --- 5. Animación de Corazones --- */
+        .heart {
+            position: absolute;
+            background-color: #ff69b4; /* Rosa romántico */
+            transform: rotate(-45deg);
+            z-index: 1; 
+            opacity: 0;
+            pointer-events: none;
+            animation: heartFloat 10s infinite linear;
+        }
+
+        .heart::before,
+        .heart::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: #ff69b4;
+            border-radius: 50%;
+        }
+
+        .heart::before {
+            top: -50%;
+            left: 0;
+        }
+
+        .heart::after {
+            top: 0;
+            left: 50%;
+        }
+
+        @keyframes heartFloat {
+            0% { transform: translateY(0) rotate(-45deg); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) rotate(135deg); opacity: 0; }
+        }
+
+        /* --- 6. Media Queries para móviles --- */
+        @media (max-width: 768px) {
+            .mensaje.show {
+                font-size: 2.2em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .mensaje.show {
+                font-size: 1.6em;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <audio id="musicPlayer" src="./notocar.mp3" preload="auto" loop></audio> 
+    
+    <div class="container">
+        <canvas id="flowerCanvas"></canvas>
+
+        <div id="message" class="mensaje">
+            Te quiero mucho, corazón ❤️
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('flowerCanvas');
+        const ctx = canvas.getContext('2d');
+        const messageDiv = document.getElementById('message');
+        const body = document.body;
+        const musicPlayer = document.getElementById('musicPlayer'); 
+        
+        // --- Funciones del Canvas (Flores y Corazones) ---
+
+        function resizeCanvas() {
+            const size = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.7, 500);
+            canvas.width = size;
+            canvas.height = size;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const flowers = [];
+        const numFlowers = 15;
+        let animationStep = 0;
+        const totalSteps = 200;
+
+        for (let i = 0; i < numFlowers; i++) {
+            const angle = i * (Math.PI * 2 / numFlowers) + (Math.random() - 0.5) * Math.PI * 0.3;
+            const radius = canvas.width * (0.25 + Math.random() * 0.1);
+            flowers.push({
+                startX: canvas.width / 2 + (Math.random() - 0.5) * canvas.width * 0.1,
+                startY: canvas.height * 0.8,
+                endX: canvas.width / 2 + Math.cos(angle) * radius,
+                endY: canvas.height / 2 + Math.sin(angle) * radius,
+                petals: 5 + Math.floor(Math.random() * 2),
+                petalColor: `hsl(${30 + Math.random() * 20}, 100%, ${70 + Math.random() * 10}%)`,
+                centerColor: '#ff8c00',
+                size: canvas.width * 0.03 + Math.random() * canvas.width * 0.02,
+                stemColor: '#5da45d'
+            });
+        }
+
+        function drawPetal(x, y, size, angle, color) {
+            ctx.fillStyle = color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(size * 0.4, -size * 0.8, size * 0.6, -size * 0.8, 0, -size * 1.2);
+            ctx.bezierCurveTo(-size * 0.6, -size * 0.8, -size * 0.4, -size * 0.8, 0, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawFlower(x, y, size, petalColor, centerColor, petalsCount, progress) {
+            ctx.save();
+            ctx.translate(x, y);
+            const currentSize = size * progress;
+
+            for (let j = 0; j < petalsCount; j++) {
+                const angle = j * (Math.PI * 2 / petalsCount);
+                drawPetal(0, 0, currentSize, angle, petalColor);
+            }
+
+            ctx.fillStyle = centerColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize * 0.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const mainStemStart = canvas.height * 0.95;
+            const mainStemEnd = canvas.height * 0.5;
+            const stemProgress = animationStep / (totalSteps * 0.2);
+
+            ctx.strokeStyle = '#5da45d';
+            ctx.lineWidth = canvas.width * 0.02;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, mainStemStart);
+            ctx.bezierCurveTo(
+                canvas.width / 2 + canvas.width * 0.05, mainStemStart * 0.8,
+                canvas.width / 2 - canvas.width * 0.05, mainStemEnd * 1.1,
+                canvas.width / 2, Math.max(mainStemEnd, mainStemStart - (mainStemStart - mainStemEnd) * stemProgress)
+            );
+            ctx.stroke();
+
+            flowers.forEach((flower, index) => {
+                const flowerStartStep = totalSteps * 0.1 + index * (totalSteps * 0.6 / numFlowers);
+                if (animationStep < flowerStartStep) return;
+
+                const progress = Math.min(1, (animationStep - flowerStartStep) / (totalSteps * 0.3));
+
+                const currentX = flower.startX + (flower.endX - flower.startX) * progress;
+                const currentY = flower.startY + (flower.endY - flower.startY) * progress;
+
+                ctx.strokeStyle = flower.stemColor;
+                ctx.lineWidth = canvas.width * 0.003;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, mainStemStart);
+                ctx.quadraticCurveTo(
+                    canvas.width / 2 + (currentX - canvas.width / 2) * 0.5, currentY + canvas.height * 0.1,
+                    currentX, currentY
+                );
+                ctx.stroke();
+
+                if (progress > 0.3) {
+                    const flowerGrowthProgress = (progress - 0.3) / 0.7;
+                    drawFlower(currentX, currentY, flower.size, flower.petalColor, flower.centerColor, flower.petals, flowerGrowthProgress);
+                }
+            });
+
+            if (animationStep < totalSteps) {
+                animationStep++;
+                requestAnimationFrame(draw);
+            } else {
+                messageDiv.classList.add('show');
+            }
+        }
+
+        // --- Animación de Corazones (JavaScript) ---
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('heart');
+            body.appendChild(heart);
+
+            const size = Math.random() * 15 + 10;
+            
+            heart.style.width = `${size}px`;
+            heart.style.height = `${size}px`;
+            heart.style.left = `${Math.random() * 100}vw`;
+            heart.style.top = `${window.innerHeight + 20}px`;
+            
+            heart.style.animationDuration = `${Math.random() * 8 + 7}s`;
+
+            heart.addEventListener('animationend', () => {
+                heart.remove();
+            });
+        }
+
+        setInterval(createHeart, 400);
+
+        // --- Lógica de Reproducción para Celulares (iPhone/Android) ---
+        
+        let hasInteracted = false;
+        
+        function handleInteraction() {
+            if (!hasInteracted) {
+                // ESTA FUNCIÓN SE ACTIVA CON EL PRIMER TOQUE/CLIC Y ES CLAVE PARA CELULARES
+                musicPlayer.play().catch(error => {
+                    console.error("Fallo al reproducir música. Revisa la URL './notocar.mp3'");
+                });
+                hasInteracted = true;
+                
+                // Desactiva los escuchadores para que el audio no se intente reiniciar
+                document.removeEventListener('click', handleInteraction);
+                document.removeEventListener('touchstart', handleInteraction);
+            }
+        }
+
+        // 1. Intenta la reproducción automática al cargar (falla en iOS/Android)
+        musicPlayer.play().catch(error => {
+            // El navegador bloqueó el autoplay, ahora esperamos el toque.
+        });
+
+        // 2. Registra el evento de toque: La ÚNICA FORMA CONFIABLE DE INICIAR EL AUDIO EN MÓVILES
+        document.addEventListener('click', handleInteraction);
+        document.addEventListener('touchstart', handleInteraction);
+
+        // Inicia la animación de las flores
+        draw();
+    </script>
+</body>
+</html>
